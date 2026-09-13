@@ -1,0 +1,6 @@
+{
+  "name": "SPMB SMP Negeri 2 Teluk Bayur",
+  "description": "Sistem Penerimaan Murid Baru (SPMB) SMP Negeri 2 Teluk Bayur dengan pendaftaran online, verifikasi berkas dokumen, dan pengumuman hasil seleksi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
