@@ -46,14 +46,13 @@ npm run dev
 
 ---
 
-### Cara Deploy ke GitHub & GitHub Pages
+### Cara Deploy ke GitHub Pages & Solusi Halaman Blank / Putih Kosong
 
-Aplikasi ini dibangun menggunakan Vite + React sebagai Client-Side SPA murni dengan konfigurasi base path relatif (`base: './'`), sehingga sangat mudah dan gratis di-hosting di GitHub Pages.
+Jika Anda membuka website setelah deploy dan **halamannya putih kosong (blank screen)**, hal tersebut biasanya disebabkan karena pengaturan sumber GitHub Pages masih mencoba menjalankan kode mentah React bukan hasil build.
 
-1. **Buat Repository di GitHub**:
-   - Buat repository baru di [GitHub](https://github.com/new), misalnya `spmb-smpn2-telukbayur`.
+#### Pilihan 1: Deploy Otomatis via GitHub Actions (Rekomendasi)
 
-2. **Push Kode Proyek**:
+1. **Push Proyek ke Repository GitHub**:
    ```bash
    git init
    git add .
@@ -63,8 +62,25 @@ Aplikasi ini dibangun menggunakan Vite + React sebagai Client-Side SPA murni den
    git push -u origin main
    ```
 
-3. **Aktifkan GitHub Pages**:
-   - Buka halaman repository di GitHub.
-   - Masuk ke menu **Settings** > **Pages**.
-   - Pada bagian **Build and deployment > Source**, pilih **GitHub Actions**.
-   - Workflow `.github/workflows/deploy.yml` yang disertakan di repositori ini akan otomatis mem-build dan mempublikasikan website SPMB secara live!
+2. **Ubah Sumber Deployment di GitHub**:
+   - Buka repository Anda di browser: `https://github.com/<username-anda>/<nama-repo>`.
+   - Masuk ke tab **Settings** > menu samping **Pages**.
+   - Pada bagian **Build and deployment > Source**, ubah dari *"Deploy from a branch"* menjadi **"GitHub Actions"**.
+   - Tunggu 1-2 menit hingga tab **Actions** menyelesaikan alur kerja. Website Anda akan otomatis aktif di `https://<username-anda>.github.io/<nama-repo>/`.
+
+---
+
+#### Pilihan 2: Deploy Cepat via Terminal (`npm run deploy`)
+
+Jika Anda ingin langsung men-deploy tanpa GitHub Actions:
+
+1. Di terminal folder proyek Anda, jalankan:
+   ```bash
+   npm run deploy
+   ```
+   Perintah ini akan mem-build aplikasi dan secara otomatis meng-upload folder `dist` ke branch `gh-pages`.
+
+2. Masuk ke **Settings** > **Pages** di repository Anda:
+   - Pilih **Branch: `gh-pages`** dan **Folder: `/ (root)`**.
+   - Klik **Save**. Halaman Anda akan langsung aktif!
+

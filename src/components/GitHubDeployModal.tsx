@@ -4,12 +4,13 @@ import {
   Github, 
   Check, 
   Copy, 
-  Download, 
   Terminal, 
-  ExternalLink, 
   Sparkles, 
   ShieldCheck, 
-  Layers
+  Layers,
+  AlertTriangle,
+  HelpCircle,
+  Zap
 } from 'lucide-react';
 
 interface GitHubDeployModalProps {
@@ -20,6 +21,7 @@ interface GitHubDeployModalProps {
 export const GitHubDeployModal: React.FC<GitHubDeployModalProps> = ({ isOpen, onClose }) => {
   const [copiedWorkflow, setCopiedWorkflow] = useState(false);
   const [copiedGitCommands, setCopiedGitCommands] = useState(false);
+  const [copiedNpmDeploy, setCopiedNpmDeploy] = useState(false);
 
   if (!isOpen) return null;
 
@@ -56,7 +58,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Application
         run: npm run build
@@ -77,7 +79,7 @@ jobs:
   const gitCommands = `# 1. Inisialisasi Git dan Commit Kode
 git init
 git add .
-git commit -m "feat: Aplikasi SPMB Online SMP Negeri 2 Teluk Bayur"
+git commit -m "feat: SPMB Online SMP Negeri 2 Teluk Bayur"
 
 # 2. Hubungkan ke Repository GitHub Anda
 git branch -M main
@@ -86,14 +88,17 @@ git remote add origin https://github.com/<username-anda>/spmb-smpn2-telukbayur.g
 # 3. Push ke GitHub
 git push -u origin main`;
 
-  const copyToClipboard = (text: string, type: 'workflow' | 'git') => {
+  const copyToClipboard = (text: string, type: 'workflow' | 'git' | 'npm') => {
     navigator.clipboard.writeText(text);
     if (type === 'workflow') {
       setCopiedWorkflow(true);
       setTimeout(() => setCopiedWorkflow(false), 2000);
-    } else {
+    } else if (type === 'git') {
       setCopiedGitCommands(true);
       setTimeout(() => setCopiedGitCommands(false), 2000);
+    } else {
+      setCopiedNpmDeploy(true);
+      setTimeout(() => setCopiedNpmDeploy(false), 2000);
     }
   };
 
@@ -108,10 +113,10 @@ git push -u origin main`;
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900">
-                Panduan Deploy ke GitHub & GitHub Pages
+                Solusi & Panduan Deploy ke GitHub Pages
               </h3>
               <p className="text-xs text-slate-500">
-                Aplikasi SPMB SMPN 2 Teluk Bayur 100% Client-Side SPA yang siap di-hosting gratis di GitHub Pages
+                Mengatasi halaman kosong (blank) dan mempublikasikan SPMB SMPN 2 Teluk Bayur
               </p>
             </div>
           </div>
@@ -124,89 +129,120 @@ git push -u origin main`;
           </button>
         </div>
 
-        {/* Highlights */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 space-y-1">
-            <span className="font-bold text-blue-900 flex items-center gap-1.5">
-              <Check className="w-4 h-4 text-blue-600" />
-              Base Path Relatif
-            </span>
-            <p className="text-slate-600 text-[11px]">
-              Telah disetting <code>base: './'</code> di <code>vite.config.ts</code> sehingga berjalan lancar di subpath repo GitHub.
-            </p>
+        {/* TROUBLESHOOTING BOX - Mengapa website tidak tampil / blank? */}
+        <div className="p-5 rounded-2xl bg-rose-50 border border-rose-200 space-y-3">
+          <div className="flex items-center gap-2 text-rose-900 font-bold text-sm">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+            <span>Penyebab Utama Website Tidak Tampil / Putih Kosong di GitHub</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-1">
-            <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-emerald-600" />
-              Tanpa Server Khusus
-            </span>
-            <p className="text-slate-600 text-[11px]">
-              Tidak membutuhkan database berbayar; menggunakan penyimpanan lokal reaktif browser dan ekspor CSV.
-            </p>
-          </div>
+          <div className="space-y-2 text-xs text-rose-950 leading-relaxed">
+            <div className="p-3 bg-white/80 rounded-xl border border-rose-100">
+              <strong className="text-rose-900 block font-semibold mb-1">
+                Penyebab 1: Pengaturan Source di GitHub Pages masih "Deploy from a branch: main / (root)"
+              </strong>
+              <p className="text-slate-700">
+                Jika Anda memilih branch <code>main</code> folder <code>/ (root)</code>, GitHub Pages mencoba menjalankan kode mentah React TypeScript (<code>main.tsx</code>) yang <strong>tidak bisa dieksekusi langsung oleh browser</strong> tanpa di-build terlebih dahulu.
+              </p>
+              <p className="text-emerald-700 font-bold mt-1">
+                Solusi: Buka menu <strong>Settings &gt; Pages</strong> di repository GitHub Anda, lalu ubah <strong>Source</strong> menjadi <span className="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded">GitHub Actions</span>.
+              </p>
+            </div>
 
-          <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 space-y-1">
-            <span className="font-bold text-purple-900 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-purple-600" />
-              Gratis & HTTPS
-            </span>
-            <p className="text-slate-600 text-[11px]">
-              Dapatkan domain gratis <code>username.github.io/repo</code> dengan sertifikat SSL resmi otomatis.
-            </p>
+            <div className="p-3 bg-white/80 rounded-xl border border-rose-100">
+              <strong className="text-rose-900 block font-semibold mb-1">
+                Penyebab 2: URL dibuka tanpa garis miring di ujung
+              </strong>
+              <p className="text-slate-700">
+                Membuka <code>https://username.github.io/repo</code> tanpa tanda <code>/</code> di akhir menyebabkan file asset gagal dimuat (404). Kami sudah menyertakan script auto-redirect di <code>index.html</code> dan berkas <code>.nojekyll</code> untuk memperbaikinya secara otomatis.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Step-by-Step Instructions */}
+        {/* DUA METODE DEPLOY PILIHAN */}
         <div className="space-y-4">
           <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-blue-600" />
-            <span>Langkah 1: Push Proyek ke Repository GitHub</span>
+            <Zap className="w-4 h-4 text-amber-500" />
+            <span>Pilih Salah Satu dari 2 Metode Deploy Berikut:</span>
           </h4>
 
-          <div className="relative bg-slate-950 text-slate-100 rounded-2xl p-4 font-mono text-xs overflow-x-auto">
-            <button
-              onClick={() => copyToClipboard(gitCommands, 'git')}
-              className="absolute top-3 right-3 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              {copiedGitCommands ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedGitCommands ? 'Tersalin!' : 'Salin Perintah'}</span>
-            </button>
-            <pre className="pr-24">{gitCommands}</pre>
+          {/* METODE 1: GITHUB ACTIONS (REKOMENDASI) */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[11px] font-mono">1</span>
+                Metode A (Rekomendasi): GitHub Actions Otomatis
+              </span>
+              <span className="text-[11px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded">
+                Otomatis Tiap Git Push
+              </span>
+            </div>
+
+            <ol className="list-decimal list-inside text-xs text-slate-700 space-y-1.5 pl-1 leading-relaxed">
+              <li>Pastikan file <code>.github/workflows/deploy.yml</code> sudah ter-push ke repository Anda.</li>
+              <li>Buka repository Anda di GitHub di browser.</li>
+              <li>Klik tab <strong>Settings</strong> &gt; menu samping <strong>Pages</strong>.</li>
+              <li>Pada bagian <strong>Build and deployment &gt; Source</strong>, klik dropdown dan pilih <strong>GitHub Actions</strong>.</li>
+              <li>Tunggu 1-2 menit, GitHub Actions akan otomatis mem-build folder <code>dist/</code> dan website Anda langsung online!</li>
+            </ol>
+          </div>
+
+          {/* METODE 2: NPM RUN DEPLOY (ALTERNATIF MUDAH) */}
+          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px] font-mono">2</span>
+                Metode B (Alternatif Mandiri): Perintah `npm run deploy`
+              </span>
+              <span className="text-[11px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded">
+                Branch gh-pages
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Paket <code>gh-pages</code> telah kami pasang ke proyek. Anda cukup menjalankan satu perintah di terminal:
+            </p>
+
+            <div className="relative bg-slate-950 text-slate-100 rounded-xl p-3 font-mono text-xs">
+              <button
+                onClick={() => copyToClipboard('npm run deploy', 'npm')}
+                className="absolute top-2 right-2 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                {copiedNpmDeploy ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedNpmDeploy ? 'Tersalin!' : 'Salin'}</span>
+              </button>
+              <code>npm run deploy</code>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Lalu di <strong>Settings &gt; Pages</strong>, pilih <strong>Branch: gh-pages</strong> dan <strong>Folder: / (root)</strong>.
+            </p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        {/* Perintah Git Lengkap */}
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-blue-600" />
-              <span>Langkah 2: Otomasi Deploy via GitHub Actions (.github/workflows/deploy.yml)</span>
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <Terminal className="w-3.5 h-3.5 text-slate-500" />
+              <span>Perintah Git Push Pertama Kali</span>
             </h4>
             <button
-              onClick={() => copyToClipboard(workflowYml, 'workflow')}
-              className="text-xs font-semibold px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+              onClick={() => copyToClipboard(gitCommands, 'git')}
+              className="text-xs font-semibold px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
             >
-              {copiedWorkflow ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedWorkflow ? 'Tersalin!' : 'Salin Workflow YAML'}</span>
+              {copiedGitCommands ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedGitCommands ? 'Tersalin!' : 'Salin Perintah'}</span>
             </button>
           </div>
 
-          <div className="bg-slate-900 text-slate-100 rounded-2xl p-4 font-mono text-xs max-h-48 overflow-y-auto">
-            <pre>{workflowYml}</pre>
+          <div className="bg-slate-950 text-slate-100 rounded-2xl p-4 font-mono text-xs overflow-x-auto">
+            <pre>{gitCommands}</pre>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-2 text-xs text-amber-950">
-          <strong className="block font-bold">Langkah 3: Aktifkan GitHub Pages di Pengaturan Repository:</strong>
-          <ol className="list-decimal list-inside space-y-1 text-slate-700">
-            <li>Buka repository Anda di GitHub.</li>
-            <li>Klik tab <strong>Settings</strong> &gt; menu samping <strong>Pages</strong>.</li>
-            <li>Pada bagian <strong>Build and deployment &gt; Source</strong>, pilih <strong>GitHub Actions</strong>.</li>
-            <li>Selesai! Setiap kali Anda melakukan <code>git push</code>, website SPMB akan otomatis ter-build dan tayang secara langsung.</li>
-          </ol>
-        </div>
-
-        {/* Footer Buttons */}
+        {/* Footer */}
         <div className="flex items-center justify-end pt-2 border-t border-slate-200">
           <button
             onClick={onClose}
