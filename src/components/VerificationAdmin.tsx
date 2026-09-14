@@ -16,13 +16,23 @@ import {
   X,
   ExternalLink,
   Check,
-  RotateCcw
+  RotateCcw,
+  Users,
+  LogOut,
+  Shield,
+  UserCheck
 } from 'lucide-react';
 import { Candidate, StatusVerifikasi, JalurPendaftaran, HasilSeleksi, DocumentKey, DocumentItem } from '../types/spmb';
 import { StorageService } from '../services/storage';
 import { SCHOOL_PROFILE } from '../data/initialData';
+import { useAuth } from '../context/AuthContext';
+import { AdminLoginView } from './AdminLoginView';
+import { AdminAccountManager } from './AdminAccountManager';
 
 export const VerificationAdmin: React.FC = () => {
+  const { adminUser, adminLogout } = useAuth();
+  const [adminSubTab, setAdminSubTab] = useState<'verification' | 'accounts'>('verification');
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [filterJalur, setFilterJalur] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -34,7 +44,7 @@ export const VerificationAdmin: React.FC = () => {
   // Modal Review Form state
   const [modalStatus, setModalStatus] = useState<StatusVerifikasi>('terverifikasi');
   const [modalNotes, setModalNotes] = useState('');
-  const [modalVerifierName, setModalVerifierName] = useState('Rizal Fahmi, S.Pd');
+  const [modalVerifierName, setModalVerifierName] = useState(adminUser?.name || 'Rizal Fahmi, S.Pd');
   const [modalDocStatuses, setModalDocStatuses] = useState<Candidate['documents'] | null>(null);
   const [previewDocUrl, setPreviewDocUrl] = useState<{ name: string; url: string } | null>(null);
 
@@ -63,6 +73,7 @@ export const VerificationAdmin: React.FC = () => {
     setSelectedCandidate(cand);
     setModalStatus(cand.verificationStatus);
     setModalNotes(cand.verificationNotes || '');
+    setModalVerifierName(cand.verifiedBy || adminUser?.name || 'Rizal Fahmi, S.Pd');
     setModalDocStatuses(JSON.parse(JSON.stringify(cand.documents)));
     setPreviewDocUrl(null);
   };
@@ -104,6 +115,15 @@ export const VerificationAdmin: React.FC = () => {
       modalDocStatuses || undefined
     );
 
+    // Sync verification to Cloud SQL backend
+    StorageService.verifyCandidateServer(
+      selectedCandidate.id,
+      modalStatus,
+      modalNotes,
+      modalVerifierName,
+      modalDocStatuses
+    ).catch(err => console.warn('Deferred verification sync:', err));
+
     showToast(`Status verifikasi ${selectedCandidate.fullName} berhasil diperbarui.`);
     setSelectedCandidate(null);
     loadData();
@@ -113,6 +133,7 @@ export const VerificationAdmin: React.FC = () => {
   const handleAutoSelection = () => {
     if (window.confirm('Hitung dan tetapkan kelulusan seleksi otomatis berdasarkan kuota jalur resmi (Zonasi terdekat & Nilai Prestasi)?')) {
       const result = StorageService.autoRankAndCalculateSelection();
+      StorageService.calculateSelectionServer().catch(err => console.warn('Deferred selection sync:', err));
       showToast(`Berhasil menetapkan hasil seleksi untuk ${result.updatedCount} calon siswa terverifikasi!`);
       loadData();
     }
@@ -164,8 +185,17 @@ export const VerificationAdmin: React.FC = () => {
   const needFixCount = candidates.filter(c => c.verificationStatus === 'perlu_perbaikan').length;
   const acceptedCount = candidates.filter(c => c.selectionResult === 'diterima').length;
 
+  // If admin is not authenticated, show Admin Login view
+  if (!adminUser) {
+    return (
+      <div className="py-6 max-w-7xl mx-auto">
+        <AdminLoginView onLoginSuccess={() => loadData()} />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Toast notification */}
       {actionMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 text-sm animate-bounce">
@@ -174,52 +204,123 @@ export const VerificationAdmin: React.FC = () => {
         </div>
       )}
 
-      {/* Header Panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-3 py-0.5 rounded-full">
-              Portal Panitia PPDB
-            </span>
-            <span className="text-xs text-slate-500">SMP Negeri 2 Teluk Bayur</span>
+      {/* Admin Session Identity Bar */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-4 px-6 border border-slate-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600/30 border border-blue-400/30 flex items-center justify-center font-bold text-blue-300">
+            <Shield className="w-5 h-5" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            Verifikasi Dokumen & Manajemen Seleksi
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Periksa keabsahan berkas calon siswa, berikan catatan revisi, dan tetapkan hasil kelulusan kuota.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm sm:text-base text-white">{adminUser.name}</span>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                {adminUser.roleLabel || adminUser.role}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-300 mt-0.5">
+              <span>{adminUser.email}</span>
+              <span>•</span>
+              <span className="text-amber-300 font-medium">
+                Tugas: {adminUser.assignedJalur === 'semua' ? 'Semua Jalur' : `Jalur ${adminUser.assignedJalur}`}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Global Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleAutoSelection}
-            className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer"
-            title="Otomatis tentukan kelulusan berdasarkan kuota jalur dan ranking skor/jarak"
-          >
-            <Award className="w-4 h-4 text-amber-300" />
-            <span>Kalkulasi Hasil Seleksi Otomatis</span>
-          </button>
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+          {/* Sub Tab Switcher */}
+          <div className="bg-slate-800/80 p-1 rounded-xl border border-slate-700 flex items-center">
+            <button
+              onClick={() => setAdminSubTab('verification')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                adminSubTab === 'verification'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Verifikasi Berkas ({candidates.length})</span>
+            </button>
+            <button
+              onClick={() => setAdminSubTab('accounts')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                adminSubTab === 'accounts'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Akun Panitia</span>
+            </button>
+          </div>
 
+          {/* Logout button */}
           <button
-            onClick={handleExportCsv}
-            className="px-3.5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center gap-2 transition-colors cursor-pointer"
-            title="Unduh seluruh data dalam format CSV / Excel"
+            onClick={() => {
+              if (window.confirm('Kunci portal dan keluar dari sesi panitia?')) {
+                adminLogout();
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800/40 transition-colors cursor-pointer"
+            title="Keluar dari sesi panitia"
           >
-            <Download className="w-4 h-4" />
-            <span>Ekspor CSV</span>
-          </button>
-
-          <button
-            onClick={handleResetData}
-            className="p-2.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-            title="Reset ke data contoh awal"
-          >
-            <RotateCcw className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Keluar</span>
           </button>
         </div>
       </div>
+
+      {/* When subtab is Accounts Manager */}
+      {adminSubTab === 'accounts' ? (
+        <AdminAccountManager currentAdmin={adminUser} onToast={showToast} />
+      ) : (
+        <div className="space-y-8">
+          {/* Header Panel */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-3 py-0.5 rounded-full">
+                  Portal Panitia PPDB
+                </span>
+                <span className="text-xs text-slate-500">SMP Negeri 2 Teluk Bayur</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                Verifikasi Dokumen & Manajemen Seleksi
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Periksa keabsahan berkas calon siswa, berikan catatan revisi, dan tetapkan hasil kelulusan kuota.
+              </p>
+            </div>
+
+            {/* Global Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleAutoSelection}
+                className="px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30 flex items-center gap-2 transition-all cursor-pointer"
+                title="Otomatis tentukan kelulusan berdasarkan kuota jalur dan ranking skor/jarak"
+              >
+                <Award className="w-4 h-4 text-amber-300" />
+                <span>Kalkulasi Hasil Seleksi Otomatis</span>
+              </button>
+
+              <button
+                onClick={handleExportCsv}
+                className="px-3.5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 flex items-center gap-2 transition-colors cursor-pointer"
+                title="Unduh seluruh data dalam format CSV / Excel"
+              >
+                <Download className="w-4 h-4" />
+                <span>Ekspor CSV</span>
+              </button>
+
+              <button
+                onClick={handleResetData}
+                className="p-2.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                title="Reset ke data contoh awal"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
@@ -399,6 +500,8 @@ export const VerificationAdmin: React.FC = () => {
           </table>
         </div>
       </div>
+      </div>
+      )}
 
       {/* DETAILED VERIFICATION REVIEW MODAL */}
       {selectedCandidate && (

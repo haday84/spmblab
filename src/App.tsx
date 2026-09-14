@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { HomeView } from './components/HomeView';
 import { RegisterForm } from './components/RegisterForm';
@@ -14,6 +14,7 @@ import { RegistrationCard } from './components/RegistrationCard';
 import { GitHubDeployModal } from './components/GitHubDeployModal';
 import { Footer } from './components/Footer';
 import { Candidate } from './types/spmb';
+import { StorageService } from './services/storage';
 
 type ActiveTab = 'home' | 'register' | 'check-status' | 'admin-verify' | 'announcement';
 
@@ -21,6 +22,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [viewingCardCandidate, setViewingCardCandidate] = useState<Candidate | null>(null);
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
+
+  // Sync data from Cloud SQL backend if available
+  useEffect(() => {
+    StorageService.syncWithServer().catch(err => {
+      console.info('Using client cache:', err);
+    });
+  }, []);
 
   // When card is opened
   const handleOpenCard = (candidate: Candidate) => {

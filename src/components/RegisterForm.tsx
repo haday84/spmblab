@@ -277,6 +277,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onViewCar
       }
     });
 
+    // Synchronize to Cloud SQL PostgreSQL database
+    StorageService.addCandidateServer(newCand).catch(err => {
+      console.warn('Deferred Cloud SQL sync:', err);
+    });
+
     setSubmittedCandidate(newCand);
     onSuccess(newCand);
   };

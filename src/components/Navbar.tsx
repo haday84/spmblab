@@ -9,9 +9,14 @@ import {
   X, 
   Github, 
   PhoneCall, 
-  Home
+  Home,
+  LogIn,
+  LogOut,
+  User as UserIcon,
+  Shield
 } from 'lucide-react';
 import { SCHOOL_PROFILE } from '../data/initialData';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   activeTab: 'home' | 'register' | 'check-status' | 'admin-verify' | 'announcement';
@@ -19,16 +24,29 @@ interface NavbarProps {
   onOpenDeployModal: () => void;
 }
 
+interface NavItem {
+  id: 'home' | 'register' | 'check-status' | 'admin-verify' | 'announcement';
+  label: string;
+  icon: any;
+  badge?: string;
+}
+
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenDeployModal }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, signInWithGoogle, signOutUser, adminUser, adminLogout } = useAuth();
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { id: 'home', label: 'Beranda', icon: Home },
     { id: 'register', label: 'Pendaftaran Online', icon: FileText },
     { id: 'check-status', label: 'Cek Status & Kartu', icon: Search },
-    { id: 'admin-verify', label: 'Verifikasi Panitia', icon: ShieldCheck },
+    { 
+      id: 'admin-verify', 
+      label: adminUser ? `Panitia: ${adminUser.name.split(' ')[0]}` : 'Portal Panitia', 
+      icon: ShieldCheck,
+      badge: adminUser ? 'Aktif' : undefined
+    },
     { id: 'announcement', label: 'Pengumuman Seleksi', icon: Award },
-  ] as const;
+  ];
 
   const handleNavClick = (id: typeof activeTab) => {
     setActiveTab(id);
@@ -100,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer relative ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
                       : 'text-slate-600 hover:text-blue-700 hover:bg-slate-100'
@@ -108,13 +126,59 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span>{item.label}</span>
+                  {item.badge && (
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  )}
                 </button>
               );
             })}
           </nav>
 
-          {/* Right Action: GitHub Deploy Guide & Registration CTA */}
+          {/* Right Action: Auth, GitHub Deploy Guide & Registration CTA */}
           <div className="hidden sm:flex items-center gap-2">
+            {adminUser && (
+              <button
+                onClick={() => handleNavClick('admin-verify')}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                title={`Login sebagai: ${adminUser.name} (${adminUser.roleLabel || adminUser.role})`}
+              >
+                <Shield className="w-3.5 h-3.5 text-blue-600" />
+                <span className="max-w-[100px] truncate">{adminUser.name.split(' ')[0]}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              </button>
+            )}
+
+            {user ? (
+              <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="w-5 h-5 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <UserIcon className="w-4 h-4 text-blue-600" />
+                )}
+                <span className="font-medium max-w-[120px] truncate">{user.displayName || user.email}</span>
+                <button
+                  onClick={() => signOutUser()}
+                  title="Keluar"
+                  className="text-slate-400 hover:text-rose-600 p-0.5 rounded transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => signInWithGoogle()}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors cursor-pointer shadow-xs"
+              >
+                <LogIn className="w-3.5 h-3.5 text-blue-600" />
+                <span>Masuk Akun</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenDeployModal}
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer"
@@ -166,6 +230,31 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, onOpenD
             );
           })}
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            {user ? (
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                <div className="flex items-center gap-2">
+                  <UserIcon className="w-4 h-4 text-blue-600" />
+                  <span className="font-semibold text-slate-800">{user.displayName || user.email}</span>
+                </div>
+                <button
+                  onClick={() => signOutUser()}
+                  className="text-rose-600 hover:underline text-xs font-semibold"
+                >
+                  Keluar
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  signInWithGoogle();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Masuk Akun Google</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 onOpenDeployModal();

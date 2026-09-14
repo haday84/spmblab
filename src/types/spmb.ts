@@ -89,3 +89,18 @@ export interface SchoolInfo {
   academicYear: string;
   totalQuota: number;
 }
+
+export type AdminRole = 'superadmin' | 'admin' | 'verifikator';
+
+export interface AdminAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+  roleLabel: string;
+  password?: string;
+  assignedJalur?: JalurPendaftaran | 'semua';
+  active: boolean;
+  lastLogin?: string;
+  createdAt?: string;
+}

@@ -1,4 +1,55 @@
-import { Candidate, QuotaInfo, SchoolInfo } from '../types/spmb';
+import { Candidate, QuotaInfo, SchoolInfo, AdminAccount } from '../types/spmb';
+
+export const INITIAL_ADMINS: AdminAccount[] = [
+  {
+    id: 'adm-1',
+    name: 'Rizal Fahmi, S.Pd',
+    email: 'admin@smpn2telukbayur.sch.id',
+    role: 'superadmin',
+    roleLabel: 'Ketua Panitia PPDB',
+    password: 'admin123',
+    assignedJalur: 'semua',
+    active: true,
+    lastLogin: '2025-05-18T08:30:00Z',
+    createdAt: '2025-05-01T00:00:00Z',
+  },
+  {
+    id: 'adm-2',
+    name: 'Hady Gruty',
+    email: 'hadygruty2@gmail.com',
+    role: 'superadmin',
+    roleLabel: 'Administrator Sistem IT',
+    password: 'admin123',
+    assignedJalur: 'semua',
+    active: true,
+    lastLogin: '2025-05-18T09:15:00Z',
+    createdAt: '2025-05-01T00:00:00Z',
+  },
+  {
+    id: 'adm-3',
+    name: 'Siti Rahmawati, S.Pd',
+    email: 'verifikator1@smpn2telukbayur.sch.id',
+    role: 'verifikator',
+    roleLabel: 'Verifikator Jalur Zonasi & Afirmasi',
+    password: 'panitia2025',
+    assignedJalur: 'zonasi',
+    active: true,
+    lastLogin: '2025-05-18T07:45:00Z',
+    createdAt: '2025-05-01T00:00:00Z',
+  },
+  {
+    id: 'adm-4',
+    name: 'Budi Santoso, M.Pd',
+    email: 'verifikator2@smpn2telukbayur.sch.id',
+    role: 'verifikator',
+    roleLabel: 'Verifikator Jalur Prestasi & Mutasi',
+    password: 'panitia2025',
+    assignedJalur: 'prestasi',
+    active: true,
+    lastLogin: '2025-05-17T14:20:00Z',
+    createdAt: '2025-05-01T00:00:00Z',
+  },
+];
 
 export const SCHOOL_PROFILE: SchoolInfo = {
   name: 'SMP Negeri 2 Teluk Bayur',
